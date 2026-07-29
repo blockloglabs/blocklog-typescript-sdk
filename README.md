@@ -313,5 +313,5 @@ MIT
 ## Support
 
 - Documentation: [docs/](docs/)
-- Issues: [GitHub Issues](https://github.com/blocklog/blocklog-typescript/issues)
+- Issues: [GitHub Issues](https://github.com/blockloglabs/blocklog-typescript/issues)
 - Email: founder@blocklogsecurity.com
