@@ -14,7 +14,7 @@ export class DecisionsClient extends BaseClient {
   }
 
   public async search(query: Record<string, any>) {
-    return this.request('POST', '/decisions/search', { json: query });
+    return this.list(query);
   }
 
   public async update(id: string, data: Record<string, any>) {
@@ -27,4 +27,17 @@ export class DecisionsClient extends BaseClient {
       `/decisions/${id}/verify`,
     );
   }
+
+  public async timeline(id: string) {
+    return this.request('GET', `/decisions/${id}/timeline`);
+  }
+
+  public async evidence(id: string) {
+    return this.request('GET', `/decisions/${id}/evidence`);
+  }
+
+  public async replay(id: string) {
+    return this.request('GET', `/decisions/${id}/replay`);
+  }
 }
+

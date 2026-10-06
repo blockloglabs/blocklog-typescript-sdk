@@ -5,10 +5,10 @@
   "homepage": "https://blocklogsecurity.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/blockloglabs/blocklog-typescript.git"
+    "url": "git+https://github.com/blockloglabs/blocklog-typescript-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/blockloglabs/blocklog-typescript/issues"
+    "url": "https://github.com/blockloglabs/blocklog-typescript-sdk/issues"
   },
   "license": "MIT",
   "author": "Blocklog",

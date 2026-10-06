@@ -6,11 +6,15 @@ import { ComplianceClient } from './api/compliance';
 import { ReplayClient } from './api/replay';
 import { TeamsClient } from './api/teams';
 import { AuthClient } from './api/auth';
+import { VerifyClient } from './api/verify';
+import { ExecutionGatewayClient } from './api/executionGateway';
+import { ReceiptVerificationClient } from './api/receiptVerification';
 import { EventBuffer } from './batching/buffer';
 import { SyncTransport, type RequestInterceptor, type ResponseInterceptor } from './transport/fetch';
 import { RetryPolicy } from './transport/retry';
 import { HookCallback } from './middleware/hooks';
 import { IngestResponse } from './models/responses';
+import type { AgentEvent } from './models/events';
 import { resolveConfig, ResolvedConfig, type BlocklogConfig } from './config/config';
 import { EventProcessor } from './pipeline/processor';
 import { TraceManager } from './tracing/manager';
@@ -56,6 +60,9 @@ export class BlocklogClient {
   readonly replay: ReplayClient;
   readonly teams: TeamsClient;
   readonly auth: AuthClient;
+  readonly verify: VerifyClient;
+  readonly trust: ReceiptVerificationClient;
+  readonly executionGateway: ExecutionGatewayClient;
 
   readonly forensics: ReplayClient;
   readonly hitl: ApprovalClient;
@@ -100,6 +107,9 @@ export class BlocklogClient {
     this.replay = new ReplayClient(this);
     this.teams = new TeamsClient(this);
     this.auth = new AuthClient(this);
+    this.verify = new VerifyClient(this);
+    this.trust = new ReceiptVerificationClient();
+    this.executionGateway = new ExecutionGatewayClient(this);
 
     this.forensics = this.replay;
     this.hitl = this.approvals;
@@ -127,10 +137,10 @@ export class BlocklogClient {
 
   public async event(
     eventType: string,
-    payload: Record<string, any>,
-    options?: Record<string, any>
+    payload: Record<string, unknown>,
+    options?: Record<string, unknown>
   ): Promise<IngestResponse> {
-    const opts: Record<string, any> = { ...options, immediate: true };
+    const opts: Record<string, unknown> = { ...options, immediate: true };
     const currentSpan = TraceManager.currentSpan();
     if (currentSpan) {
       opts.trace_id = opts.trace_id || currentSpan.traceId;
@@ -140,12 +150,26 @@ export class BlocklogClient {
     return this.processor.processEvent(eventType, payload, opts);
   }
 
+  /**
+   * Records one event through the backend's existing log ingestion endpoint.
+   * It is a typed convenience wrapper around `event`, not a speculative API.
+   */
+  public async recordEvent(event: AgentEvent): Promise<IngestResponse> {
+    if (!event.eventType) throw new TypeError('eventType is required');
+    return this.event(event.eventType, event.payload, {
+      idempotency_key: event.id,
+      parent_event_id: event.parentEventId,
+      agent_metadata: event.metadata,
+      immediate: true,
+    });
+  }
+
   public async enqueue(
     eventType: string,
-    payload: Record<string, any>,
-    options?: Record<string, any>
+    payload: Record<string, unknown>,
+    options?: Record<string, unknown>
   ): Promise<IngestResponse | null> {
-    const opts: Record<string, any> = { ...options, noAutoFlush: true };
+    const opts: Record<string, unknown> = { ...options, noAutoFlush: true };
     const currentSpan = TraceManager.currentSpan();
     if (currentSpan) {
       opts.trace_id = opts.trace_id || currentSpan.traceId;

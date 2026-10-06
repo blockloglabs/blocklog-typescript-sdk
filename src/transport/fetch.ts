@@ -47,7 +47,11 @@ export class SyncTransport {
     timeout?: number;
     debug?: boolean;
   }) {
-    this.baseUrl = options.baseUrl.replace(/\/$/, '');
+    let base = (options.baseUrl || 'https://blocklogsecurity.com/api/v1').trim().replace(/\/$/, '');
+    if (!/^https?:\/\//i.test(base)) {
+      base = `http://${base}`;
+    }
+    this.baseUrl = base;
     this.credential = options.accessToken ?? options.apiKey;
     this.timeoutMs = options.timeout || 10000;
     this.debug = options.debug ?? false;
@@ -66,7 +70,15 @@ export class SyncTransport {
   }
 
   public async request<T>(method: string, path: string, options?: RequestOptions): Promise<T> {
-    const url = new URL(this.baseUrl + path);
+    let cleanPath = path.startsWith('/') ? path : `/${path}`;
+    if (this.baseUrl.endsWith('/api/v1') && cleanPath.startsWith('/api/v1/')) {
+      cleanPath = cleanPath.slice(7);
+    } else if (this.baseUrl.endsWith('/api/v1') && cleanPath === '/api/v1') {
+      cleanPath = '';
+    } else if (!this.baseUrl.endsWith('/api/v1') && !cleanPath.startsWith('/api/v1/') && cleanPath !== '/api/v1') {
+      cleanPath = `/api/v1${cleanPath}`;
+    }
+    const url = new URL(this.baseUrl + cleanPath);
     if (options?.params) {
       Object.entries(options.params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -74,6 +86,7 @@ export class SyncTransport {
         }
       });
     }
+
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

@@ -9,6 +9,7 @@ import { instrumentOpenAIAgents } from './integrations/openai';
 
 // Export everything individually
 export * from './client';
+export type { AgentEvent, LLMCall, ToolCall, ExecutionReceipt } from './models/events';
 export * from './errors';
 export * from './models/auth';
 export * from './models/teams';
@@ -18,6 +19,14 @@ export * from './utils/teams';
 export { traceAgent, executeAgent } from './decorators/agent';
 export { traceTool, executeTool } from './decorators/tool';
 export { executeDecision, DecisionContext } from './decorators/decision';
+
+// Export API client classes for type annotations
+export { VerifyClient } from './api/verify';
+export { ApprovalClient } from './api/approvals';
+export { DecisionsClient } from './api/decisions';
+export { IncidentsClient } from './api/incidents';
+export { ComplianceClient } from './api/compliance';
+export { ReplayClient } from './api/replay';
 
 // Default export acts as the global singleton
 class BlocklogGlobal {

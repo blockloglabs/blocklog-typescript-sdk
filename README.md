@@ -1,5 +1,23 @@
 # Blocklog TypeScript SDK
 
+Blocklog is execution, control, and verification infrastructure for autonomous
+AI agents. The SDK records backend-supported log events; execution and receipt
+capabilities remain subject to the backend API contract.
+
+```ts
+import { BlocklogClient } from '@blocklog/sdk';
+
+const client = new BlocklogClient({ apiKey: process.env.BLOCKLOG_API_KEY! });
+await client.recordEvent({
+  eventType: 'agent.execution.completed',
+  payload: { agent: 'support-assistant', status: 'completed' },
+});
+```
+
+Event ingestion uses the existing `/api/v1/logs` endpoint and processor-created
+events carry a unique idempotency key for controlled retry. See
+[low-effort instrumentation](docs/low-effort-sdk.md).
+
 The official TypeScript SDK for Blocklog - production-grade observability and compliance for AI agents.
 
 ## Features
@@ -313,5 +331,5 @@ MIT
 ## Support
 
 - Documentation: [docs/](docs/)
-- Issues: [GitHub Issues](https://github.com/blockloglabs/blocklog-typescript/issues)
+- Issues: [GitHub Issues](https://github.com/blockloglabs/blocklog-typescript-sdk/issues)
 - Email: founder@blocklogsecurity.com

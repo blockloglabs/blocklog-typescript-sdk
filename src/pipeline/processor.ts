@@ -143,9 +143,9 @@ export class EventProcessor {
 
   private async sendImmediate(envelope: EventEnvelope): Promise<IngestResponse> {
     try {
-      return await this.retryPolicy.run(() =>
-        this.transport.request('POST', '/logs', { json: envelope })
-      );
+      // Every processor envelope carries a unique idempotency key. Retrying is
+      // therefore limited to that keyed ingestion request.
+      return await this.retryPolicy.run(() => this.transport.request('POST', '/logs', { json: envelope }));
     } catch (err: any) {
       await this.dlq.add(envelope, err?.message || 'Failed after max retries');
       throw err;
@@ -169,9 +169,7 @@ export class EventProcessor {
         const body = { logs: items };
 
         try {
-          const response = await this.retryPolicy.run(() =>
-            this.transport.request<{ ingested?: number; log_ids?: string[] }>('POST', '/logs/batch', { json: body })
-          );
+          const response = await this.retryPolicy.run(() => this.transport.request<{ ingested?: number; log_ids?: string[] }>('POST', '/logs/batch', { json: body }));
           await this.memoryQueue.dequeue(items.length);
           await this.persistentQueue.dequeue(items.length);
           totalIngested += response.ingested ?? 0;

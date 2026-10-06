@@ -37,7 +37,7 @@ describe('API Sub-Clients', () => {
     expect(requestSpy).toHaveBeenCalledWith('GET', '/decisions', { params: { limit: 10 } });
 
     await client.decisions.search({ query: 'test' });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/decisions/search', { json: { query: 'test' } });
+    expect(requestSpy).toHaveBeenCalledWith('GET', '/decisions', { params: { query: 'test' } });
 
     await client.decisions.verify('1');
     expect(requestSpy).toHaveBeenCalledWith('GET', '/decisions/1/verify');
@@ -56,19 +56,25 @@ describe('API Sub-Clients', () => {
 
   it('ApprovalClient', async () => {
     await client.approvals.create({ decisionId: '1', reason: 'r' });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/hitl/request', { json: { decisionId: '1', reason: 'r' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/hitl/request', {
+      json: { decision_id: '1', reason: 'r' },
+    });
 
     await client.approvals.approve('1', 'r');
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/hitl/approve', { json: { id: '1', reason: 'r' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/hitl/approve', {
+      json: { approval_id: '1', auth_response: { status: 'approved', reason: 'r' } },
+    });
 
     await client.approvals.reject('1', 'r');
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/hitl/reject', { json: { id: '1', reason: 'r' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/hitl/reject', {
+      json: { approval_id: '1', reviewer: 'system', rejection_reason: 'r', decision_id: undefined },
+    });
 
     await client.approvals.status('1');
     expect(requestSpy).toHaveBeenCalledWith('GET', '/hitl/1/status');
 
     await client.approvals.list({ limit: 10 });
-    expect(requestSpy).toHaveBeenCalledWith('GET', '/hitl', { params: { limit: 10 } });
+    expect(requestSpy).toHaveBeenCalledWith('GET', '/hitl/audit-trail', { params: { limit: 10 } });
   });
 
   it('IncidentsClient', async () => {
@@ -79,7 +85,7 @@ describe('API Sub-Clients', () => {
     expect(requestSpy).toHaveBeenCalledWith('GET', '/incidents/1');
 
     await client.incidents.update('1', { a: 1 });
-    expect(requestSpy).toHaveBeenCalledWith('PUT', '/incidents/1', { json: { a: 1 } });
+    expect(requestSpy).toHaveBeenCalledWith('PATCH', '/incidents/1', { json: { a: 1 } });
 
     await client.incidents.list({ limit: 10 });
     expect(requestSpy).toHaveBeenCalledWith('GET', '/incidents', { params: { limit: 10 } });
@@ -88,21 +94,23 @@ describe('API Sub-Clients', () => {
     expect(requestSpy).toHaveBeenCalledWith('POST', '/incidents/1/assign', { json: { assignee: 'user' } });
 
     await client.incidents.resolve('1', 'r');
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/incidents/1/resolve', { json: { reason: 'r' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/incidents/1/resolve', { json: { resolution_summary: 'r' } });
 
     await client.incidents.close('1', 'r');
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/incidents/1/close', { json: { reason: 'r' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/incidents/1/close', { json: { closure_notes: 'r', approval_status: 'approved' } });
   });
 
   it('ComplianceClient', async () => {
     await client.compliance.audit({ startDate: '2024-01-01' });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/compliance/audit', { json: { startDate: '2024-01-01' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/compliance/reports', {
+      json: expect.objectContaining({ startDate: '2024-01-01', title: expect.any(String) }),
+    });
 
     await client.compliance.verify('1');
-    expect(requestSpy).toHaveBeenCalledWith('GET', '/compliance/verify/1');
+    expect(requestSpy).toHaveBeenCalledWith('GET', '/compliance/reports/1');
 
     await client.compliance.export({ format: 'pdf' });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/compliance/export', { json: { format: 'pdf' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/compliance/reports', { json: { format: 'pdf' } });
 
     await client.compliance.getReport('1');
     expect(requestSpy).toHaveBeenCalledWith('GET', '/compliance/reports/1');
@@ -111,7 +119,7 @@ describe('API Sub-Clients', () => {
     expect(requestSpy).toHaveBeenCalledWith('GET', '/compliance/dashboard', { params: { a: 1 } });
 
     await client.compliance.shareReport('1', ['a@b.com']);
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/compliance/reports/1/share', { json: { emails: ['a@b.com'] } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/compliance/reports/1/share', { json: { recipients: ['a@b.com'] } });
 
     await client.compliance.exportEvidence('1', 'pdf');
     expect(requestSpy).toHaveBeenCalledWith('GET', '/compliance/reports/1/export', { params: { format: 'pdf' } });
@@ -119,25 +127,29 @@ describe('API Sub-Clients', () => {
 
   it('ReplayClient', async () => {
     await client.replay.reconstruct('trace-123', { options: 'test' });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/replays/reconstruct', { json: { traceId: 'trace-123', options: 'test' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/forensics/replays', {
+      json: expect.objectContaining({ trace_id: 'trace-123' }),
+    });
 
     await client.replay.verify('1');
-    expect(requestSpy).toHaveBeenCalledWith('GET', '/replays/1/verify');
+    expect(requestSpy).toHaveBeenCalledWith('GET', '/forensics/replays/1/verify');
 
     await client.replay.replay('1', { speed: 2 });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/replays/1/execute', { json: { speed: 2 } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/forensics/replays/1/execute', { json: { speed: 2 } });
 
     await client.replay.create({ t: 1 });
-    expect(requestSpy).toHaveBeenCalledWith('POST', '/replays', { json: { t: 1 } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/forensics/replays', { json: { t: 1 } });
 
     await client.replay.get('1');
-    expect(requestSpy).toHaveBeenCalledWith('GET', '/replays/1');
+    expect(requestSpy).toHaveBeenCalledWith('GET', '/forensics/replays/1');
 
     await client.replay.list({ a: 1 });
-    expect(requestSpy).toHaveBeenCalledWith('GET', '/replays', { params: { a: 1 } });
+    expect(requestSpy).toHaveBeenCalledWith('GET', '/forensics/replays', { params: { a: 1 } });
 
     await client.replay.compare('a', 'b');
-    expect(requestSpy).toHaveBeenCalledWith('GET', '/replays/compare', { params: { a: 'a', b: 'b' } });
+    expect(requestSpy).toHaveBeenCalledWith('POST', '/forensics/compare', {
+      json: { baseline_session_id: 'a', candidate_session_id: 'b' },
+    });
   });
 
   describe('HTTP Status Code Handling', () => {
